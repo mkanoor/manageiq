@@ -15,7 +15,7 @@ class TreeBuilderAeClass  < TreeBuilder
   # Get root nodes count/array for explorer tree
   def x_get_tree_roots(options)
     objects = if MIQ_AE_COPY_ACTIONS.include?(@sb[:action])
-                MiqAeDomain.where(:id => @sb[:domain_id])
+                [MiqAeDomain.find(@sb[:domain_id])]
               else
                 MiqAeDomain.all
               end
@@ -34,7 +34,7 @@ class TreeBuilderAeClass  < TreeBuilder
   end
 
   def x_get_tree_ns_kids(object, options)
-    objects = MiqAeNamespace.all(:conditions => {:parent_id => object.id.to_i})
+    objects = object.ae_namespaces
     unless MIQ_AE_COPY_ACTIONS.include?(@sb[:action])
       ns_classes = object.ae_classes
       objects += ns_classes.flatten unless ns_classes.blank?

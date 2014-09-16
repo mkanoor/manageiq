@@ -281,7 +281,6 @@ module MiqAeMethodService
       $log.info "MiqAeService#instance_set_display_name << path=#{path.inspect}, display_name=#{display_name.inspect}"
       aei = __find_instance_from_path(path)
       return false if aei.nil?
-
       aei.update_attributes(:display_name => display_name)
       return true
     end
@@ -309,9 +308,7 @@ module MiqAeMethodService
 
         aec.ae_instances.select { |i| instance_re =~ i.name }.each do |aei|
           iname = if options[:path]
-                    MiqAeEngine::MiqAePath.new(:ae_namespace => aec.namespace,
-                                               :ae_class     => aec.name,
-                                               :ae_instance  => aei.name).to_s
+                    aei.fqname
                   else
                     aei.name
                   end

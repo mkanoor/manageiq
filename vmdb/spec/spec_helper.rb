@@ -20,6 +20,17 @@ rescue LoadError
 end
 
 RSpec.configure do |config|
+  
+  ENV['AUTOMATE_DB_DIRECTORY'] = '/tmp/rspec_test'
+  config.before(:each) do
+    FileUtils.rm_rf('/tmp/rspec_test') if File.exist?('/tmp/rspec_test')
+    FileUtils.mkdir('/tmp/rspec_test')
+  end
+
+  config.after(:each) do
+    FileUtils.rm_rf('/tmp/rspec_test') if File.exist?('/tmp/rspec_test')
+  end
+
   # == Mock Framework
   #
   # If you prefer to use mocha, flexmock or RR, uncomment the appropriate line:

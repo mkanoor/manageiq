@@ -28,13 +28,13 @@ class MiqAeClassCopy
 
   def self.copy_multiple(ids, domain, ns = nil, overwrite = false)
     new_ids = []
-    MiqAeClass.transaction do
+    #MiqAeClass.transaction do
       ids.each do |id|
         class_obj = MiqAeClass.find(id)
         new_class = new(class_obj.fqname).to_domain(domain, ns, overwrite)
         new_ids << new_class.id if new_class
       end
-    end
+    #end
     new_ids
   end
 
@@ -55,17 +55,17 @@ class MiqAeClassCopy
   def create_class
     ns = MiqAeNamespace.find_or_create_by_fqname(@target_ns_fqname, false)
     ns.save!
-    @dest_class = MiqAeClass.create!(:namespace_id => ns.id,
-                                     :name         => @target_name,
-                                     :description  => @src_class.description,
-                                     :type         => @src_class.type,
-                                     :display_name => @src_class.display_name,
-                                     :inherits     => @src_class.inherits,
-                                     :visibility   => @src_class.visibility)
+    @dest_class = MiqAeClass.create(:namespace_id => ns.id,
+                                    :name         => @target_name,
+                                    :description  => @src_class.description,
+                                    :type         => @src_class.type,
+                                    :display_name => @src_class.display_name,
+                                    :inherits     => @src_class.inherits,
+                                    :visibility   => @src_class.visibility)
   end
 
   def copy_schema
-    @dest_class.ae_fields = add_fields
+    @dest_class.ae_fields << add_fields
     @dest_class.save!
   end
 

@@ -33,13 +33,13 @@ class MiqAeMethodCopy
 
   def self.copy_multiple(ids, domain, ns = nil, overwrite = false)
     nids = []
-    MiqAeMethod.transaction do
+    #MiqAeMethod.transaction do
       ids.each do |id|
         method_obj = MiqAeMethod.find(id)
         new_method = new(method_obj.fqname).to_domain(domain, ns, overwrite)
         nids << new_method.id if new_method
       end
-    end
+    #end
     nids
   end
 
@@ -54,7 +54,8 @@ class MiqAeMethodCopy
   def copy
     validate
     create_method
-    @dest_method.inputs << add_inputs
+    inputs = add_inputs
+    @dest_method.inputs.send(:<<, inputs) unless inputs.empty?
     @dest_method.save!
     @dest_method
   end

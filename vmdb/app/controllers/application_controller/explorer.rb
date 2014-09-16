@@ -1168,12 +1168,22 @@ module ApplicationController::Explorer
     TreeBuilder.rbac_filtered_objects(objects, options)
   end
 
+  def is_automate_node?(treenodeid)
+    return true if treenodeid.start_with?('aen-')
+    return true if treenodeid.start_with?('aec-')
+    return true if treenodeid.start_with?('aei-')
+    return true if treenodeid.start_with?('aem-')
+    false
+  end
+
+
   def valid_active_node(treenodeid)
+    return treenodeid if is_automate_node?(treenodeid) 
     nodetype, id = treenodeid.split("_").last.split("-")
     return treenodeid if ["root",""].include?(nodetype) #incase node is root or doesn't have a prefix
     kls = model_from_nodetype(nodetype)
     return treenodeid if kls == Hash
-
+    return treenodeid if [MiqAeNamespace,MiqAeClass,MiqAeInstance,MiqAeMethod,MiqAeField,MiqAeValue].include?(kls)
     unless kls.where(:id => from_cid(id)).exists?
       @replace_trees = [@sb[:active_accord]]      #refresh trees
       self.x_node = "root"

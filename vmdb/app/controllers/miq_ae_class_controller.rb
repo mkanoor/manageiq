@@ -14,11 +14,19 @@ class MiqAeClassController < ApplicationController
     redirect_to :action => 'explorer'
   end
 
+  def to_cid(id)
+    id
+  end
+
+  def from_cid(id)
+    id
+  end
+
   def change_tab
     #resetting flash array so messages don't get displayed when tab is changed
     @flash_array = Array.new
     @explorer = true
-    @record = @ae_class = MiqAeClass.find_by_id(from_cid(@temp[:ae_class_id]))
+    @record = @ae_class = MiqAeClass.find_by_id(from_cid(x_node.split('-').last))
     @sb[:active_tab] = params[:tab_id]
     c_buttons, c_xml = build_toolbar_buttons_and_xml(center_toolbar_filename)
     case params[:tab_id]
@@ -177,7 +185,8 @@ class MiqAeClassController < ApplicationController
         else
           records = Array.new
           # Add Namespaces under a namespace
-          details = MiqAeNamespace.all(:conditions => {:parent_id => @record.id.to_i})
+          #details = MiqAeNamespace.all(:conditions => {:parent_id => @record.id.to_i})
+          details = @record.ae_namespaces
           details.flatten.sort{|a,b| a.display_name.to_s + a.name.to_s <=> b.display_name.to_s + b.name.to_s}.each do |r|
             records.push(r)
           end
@@ -271,7 +280,6 @@ class MiqAeClassController < ApplicationController
 
     # fixme: is the following line needed?
     #replace_trees = @replace_trees if @replace_trees  #get_node_info might set this
-
     nodes = x_node.split('-')
 
     @in_a_form = @in_a_form_fields = @in_a_form_props = false if params[:button] == "cancel" ||
@@ -280,7 +288,6 @@ class MiqAeClassController < ApplicationController
                                               params[:action] == "x_show"
     get_node_info(x_node) if !@in_a_form && @button != "reset"
     ae_tree = build_ae_tree if replace_trees
-
     c_buttons, c_xml = build_toolbar_buttons_and_xml(center_toolbar_filename) if !@in_a_form
     h_buttons, h_xml = build_toolbar_buttons_and_xml("x_history_tb")
 
@@ -722,7 +729,7 @@ class MiqAeClassController < ApplicationController
       id = @sb[:row_selected].split('-')
       @ae_class = MiqAeClass.find(from_cid(id[1]))
     else
-      @ae_class = MiqAeClass.find(params[:id].to_i)
+      @ae_class = MiqAeClass.find(params[:id])
     end
     set_form_vars
     # have to get name and set node info, to load multiple tabs correctly
@@ -740,7 +747,7 @@ class MiqAeClassController < ApplicationController
       id = @sb[:row_selected].split('-')
       @ae_class = MiqAeClass.find(from_cid(id[1]))
     else
-      @ae_class = MiqAeClass.find(params[:id].to_i)
+      @ae_class = MiqAeClass.find(params[:id])
     end
     fields_set_form_vars
     @in_a_form = true
@@ -890,16 +897,20 @@ class MiqAeClassController < ApplicationController
       set_instances_record_vars(@ae_inst)    # Set the instance record variables, but don't save
       set_instances_value_vars(@ae_values)   # Set the instance record variables, but don't save
       begin
-        MiqAeInstance.transaction do
-          @ae_inst.save!
+        # MiqAeInstance.transaction do
+          @ae_inst.ae_values.clear
           @ae_values.each do |val|
-            val = nil if val == ""
-            val.save!
+            #val = nil if val == ""
+            @ae_inst.ae_values << val
           end
-        end   # end of transaction
+          @ae_inst.save!
+        # end   # end of transaction
       rescue StandardError => bang
         add_flash(I18n.t("flash.error_during", :task=>"save") << bang.message, :error)
         @in_a_form = true
+        @ae_inst.errors.each do |field, msg|
+          add_flash("#{field.to_s.capitalize} #{msg}", :error)
+        end
         render :update do |page|
           if @sb[:row_selected]
             page.replace("flash_msg_div_class_instances", :partial=>"layouts/flash_msg", :locals=>{:div_num=>"_class_instances"})
@@ -951,13 +962,15 @@ class MiqAeClassController < ApplicationController
       set_instances_record_vars(add_aeinst)  # Set the instance record variables, but don't save
       set_instances_value_vars(@ae_values)   # Set the instance value record variables, but don't save
       begin
-        MiqAeInstance.transaction do
+        #MiqAeInstance.transaction do
+        # 
+          add_aeinst.ae_values = @ae_values
           add_aeinst.save!
-          @ae_values.each do |val|
-            val.instance_id = add_aeinst.id
-            val.save!
-          end
-        end  # end of transaction
+          #@ae_values.each do |val|
+          #  val.instance_id = add_aeinst.id
+          #  val.save!
+          #end
+        #end  # end of transaction
       rescue StandardError => bang
         add_flash(I18n.t("flash.error_during", :task=>"add") << bang.message, :error)
         @in_a_form = true
@@ -997,7 +1010,7 @@ class MiqAeClassController < ApplicationController
     @edit[:new][:description] = @ae_class.description
     @edit[:new][:namespace] = @ae_class.namespace
     @edit[:new][:inherits] = @ae_class.inherits
-    @edit[:inherits_from] = MiqAeClass.all.collect {|c| [ c.fqname, c.fqname ] }
+    #@edit[:inherits_from] = MiqAeClass.all.collect {|c| [ c.fqname, c.fqname ] }
     @edit[:current] = @edit[:new].dup
     @right_cell_text = @edit[:rec_id].nil? ?
         I18n.t("cell_header.adding_model_record",:model=>ui_lookup(:model=>"Class")) :
@@ -1301,16 +1314,19 @@ class MiqAeClassController < ApplicationController
       @in_a_form = false
       replace_right_cell
     when "save"
-      ae_class = find_by_id_filtered(MiqAeClass, params[:id])
+      ae_class = find_by_id_filtered_ae(MiqAeClass, params[:id])
       set_record_vars(ae_class)                     # Set the record variables, but don't save
       begin
-        MiqAeClass.transaction do
+        #MiqAeClass.transaction do
           ae_class.save!
-        end  # end of transaction
+        #end  # end of transaction
       rescue StandardError => bang
         add_flash(I18n.t("flash.error_during", :task=>"save") << bang.message, :error)
         session[:changed] = @changed
         @changed = true
+        add_aeclass.errors.each do |field,msg|
+          add_flash("#{field.to_s.capitalize} #{msg}", :error)
+        end
         render :update do |page|
           page.replace("flash_msg_div_class_props", :partial=>"layouts/flash_msg", :locals=>{:div_num=>"_class_props"})
         end
@@ -1349,10 +1365,10 @@ class MiqAeClassController < ApplicationController
       @in_a_form = false
       replace_right_cell
     when "save"
-      ae_class = find_by_id_filtered(MiqAeClass, params[:id])
+      ae_class = find_by_id_filtered_ae(MiqAeClass, params[:id])
       fields = set_field_vars
       begin
-        MiqAeClass.transaction do
+        
           MiqAeField.find_all_by_id(@edit[:fields_to_delete]).each do |fld|
             fld.destroy
           end
@@ -1360,11 +1376,11 @@ class MiqAeClassController < ApplicationController
             fld.default_value = nil if fld.default_value == ""
             fld.save!
           end
-        end  # end of transaction
+       
       rescue StandardError => bang
         add_flash(I18n.t("flash.error_during", :task=>"save") << bang.message, :error)
         session[:changed] = @changed
-        @changed = truemail.corp.redhat.com
+        @changed = true
         render :update do |page|
           page.replace("flash_msg_div_class_fields",
                        :partial => "layouts/flash_msg",
@@ -1407,7 +1423,7 @@ class MiqAeClassController < ApplicationController
       @in_a_form = false
       replace_right_cell
     when "save"
-      ae_ns = find_by_id_filtered(@edit[:typ].constantize, params[:id])
+      ae_ns = find_by_id_filtered_ae(@edit[:typ].constantize, params[:id])
       ns_set_record_vars(ae_ns)                     # Set the record variables, but don't save
       begin
         ae_ns.save!
@@ -1456,24 +1472,34 @@ class MiqAeClassController < ApplicationController
       @in_a_form = false
       replace_right_cell
     when "save"
-      ae_method = find_by_id_filtered(MiqAeMethod, params[:id])
+      ae_method = find_by_id_filtered_ae(MiqAeMethod, params[:id])
       set_method_record_vars(ae_method)                     # Set the record variables, but don't save
       fields = set_input_vars
       begin
-        MiqAeMethod.transaction do
-          ae_method.save!
+        # MiqAeMethod.transaction do
+
           MiqAeField.find_all_by_id(@edit[:fields_to_delete]).each do |fld|
-            fld.destroy
+            ae_method.inputs.delete(fld)
           end
+
           fields.sort_by { |a| [a.priority.to_i] }.each do |fld|
             fld.default_value = nil if fld.default_value == ""
-            fld.save!
+            if fld.new_record?
+              ae_method.inputs << fld
+            else
+              upd = ae_method.inputs.detect { |f| f.id == fld.id}
+              upd.update_attributes(fld.attributes)
+            end
           end
-        end  # end of transaction
+          ae_method.save!
+       # end  # end of transaction
       rescue StandardError => bang
         add_flash(I18n.t("flash.error_during", :task=>"save") << bang.message, :error)
         session[:changed] = @changed
         @changed = true
+        ae_method.errors.each do |field,msg|
+          add_flash("#{field.to_s.capitalize} #{msg}", :error)
+        end
         render :update do |page|
           if @sb[:row_selected]
             page.replace("flash_msg_div_class_methods", :partial=>"layouts/flash_msg", :locals=>{:div_num=>"_class_methods"})
@@ -1544,12 +1570,15 @@ class MiqAeClassController < ApplicationController
       add_aeclass = MiqAeClass.new
       set_record_vars(add_aeclass)                        # Set the record variables, but don't save
       begin
-        MiqAeClass.transaction do
+        #MiqAeClass.transaction do
           add_aeclass.save!
-        end
+        #end
       rescue StandardError => bang
         add_flash(I18n.t("flash.error_during", :task=>"add") << bang.message, :error)
         @in_a_form = true
+        add_aeclass.errors.each do |field,msg|
+          add_flash("#{field.to_s.capitalize} #{msg}", :error)
+        end
         render :update do |page|
           page.replace("flash_msg_div_class_props", :partial=>"layouts/flash_msg", :locals=>{:div_num=>"_class_props"})
         end
@@ -1581,18 +1610,24 @@ class MiqAeClassController < ApplicationController
       get_method_form_vars
       add_aemethod = MiqAeMethod.new
       set_method_record_vars(add_aemethod)                        # Set the record variables, but don't save
+      ae_inputs = set_input_vars
       begin
-        MiqAeMethod.transaction do
+        #MiqAeMethod.transaction do
+          add_aemethod.inputs ae_inputs unless ae_inputs.empty?
           add_aemethod.save!
-          ae_method = MiqAeMethod.find_by_name_and_class_id(add_aemethod.name, from_cid(@edit[:ae_class_id]))
-          @edit[:new][:fields].each do |fld|
-            fld.method_id = ae_method.id
-            fld.save!
-          end
-        end
+
+          #ae_method = MiqAeMethod.find_by_name_and_class_id(add_aemethod.name, from_cid(@edit[:ae_class_id]))
+          #@edit[:new][:fields].each do |fld|
+          #  fld.method_id = ae_method.id
+          #  fld.save!
+          #end
+        #end
       rescue StandardError => bang
         add_flash(I18n.t("flash.error_during", :task=>"add") << bang.message, :error)
         @in_a_form = true
+        add_aemethod.errors.each do |field,msg|
+          add_flash("#{field.to_s.capitalize} #{msg}", :error)
+        end
         render :update do |page|
           page.replace("flash_msg_div_class_methods", :partial=>"layouts/flash_msg", :locals=>{:div_num=>"_class_methods"})
         end
@@ -1965,11 +2000,11 @@ private
     @ae_values = []
 
     @ae_class.ae_fields.sort_by { |a| [a.priority.to_i] }.each do |fld|
-      val = MiqAeValue.find_by_field_id_and_instance_id(fld.id.to_i, @ae_inst.id.to_i)
+      val = MiqAeValue.find_by_field_id_and_instance_id(fld.id, @ae_inst.id)
       if val.nil?
         val             = MiqAeValue.new
-        val.field_id    = fld.id.to_i
-        val.instance_id = @ae_inst.id.to_i
+        val.field_id    = fld.id
+        val.instance_id = @ae_inst.id
       end
       @ae_values.push(val)
     end
@@ -2500,11 +2535,11 @@ private
     @ae_values = Array.new
 
     @ae_class.ae_fields.sort_by{|a| [a.priority.to_i]}.each do |fld|
-      val = MiqAeValue.find_by_field_id_and_instance_id(fld.id.to_i,@ae_inst.id.to_i)
+      val = MiqAeValue.find_by_field_id_and_instance_id(fld.id,@ae_inst.id)
       if val.nil?
         val = MiqAeValue.new
-        val.field_id = fld.id.to_i
-        val.instance_id = @ae_inst.id.to_i
+        val.field_id = fld.id
+        val.instance_id = @ae_inst.id
       end
       @ae_values.push(val)
     end
@@ -2527,7 +2562,7 @@ private
     ns = x_node.split("-")
     if ns.first == "aen" && !miqaeclass.namespace_id
       rec = MiqAeNamespace.find(from_cid(ns[1]))
-      miqaeclass.namespace_id = rec.id.to_i
+      miqaeclass.namespace_id = rec.id
       #miqaeclass.namespace = rec.name
     end
   end
@@ -2564,7 +2599,7 @@ private
       else
         new_field = MiqAeField.find_by_id(fld['id'])
       end
-
+      
       field_attributes.each do |attr|
         if attr == "substitute"
           new_field.send("#{attr}=", @edit[:new][:fields][i][attr])

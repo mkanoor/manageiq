@@ -37,14 +37,14 @@ class MiqAeInstanceCopy
   def self.copy_multiple(ids, domain, ns = nil, overwrite = false)
     validate_flag = true
     nids = []
-    MiqAeInstance.transaction do
+    #MiqAeInstance.transaction do
       ids.each do |id|
         instance_obj = MiqAeInstance.find(id)
         new_instance = new(instance_obj.fqname, validate_flag).to_domain(domain, ns, overwrite)
         nids << new_instance.id if new_instance
         validate_flag = false
       end
-    end
+    #end
     nids
   end
 
@@ -59,7 +59,8 @@ class MiqAeInstanceCopy
   def copy
     validate
     create_instance
-    @dest_instance.ae_values << add_values
+    values = add_values
+    @dest_instance.ae_values << values unless values.empty?
     @dest_instance.save!
     @dest_instance
   end

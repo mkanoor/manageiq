@@ -1,6 +1,7 @@
 class TreeBuilder
   include Sandbox
   include CompressedIds
+  AE_CLASSES = %w(MiqAeDomain MiqAeNamespace MiqAeClass MiqAeInstance MiqAeMethod MiqAeField MiqAeValue)
   attr_reader :locals_for_render, :name, :type
 
   #need to move this to a subclass
@@ -75,7 +76,9 @@ class TreeBuilder
     elsif model.nil? && [:sandt_tree, :svccat_tree, :stcat_tree].include?(x_active_tree)
       # Creating empty record to show items under unassigned catalog node
       object = ServiceTemplateCatalog.new # Get the object from the DB
-    else
+    elsif AE_CLASSES.include?(model)
+      object = model.constantize.find(rec_id)   # Get the object from the DB
+    else  
       object = model.constantize.find(from_cid(rec_id))   # Get the object from the DB
     end
 

@@ -253,7 +253,9 @@ module MiqAeDialogSpec
       MiqAeDatastore.reset
       @domain = "SPEC_DOMAIN"
       @model_data_dir = File.join(File.dirname(__FILE__), "data")
+      puts "Importing Model started #{Time.now}"
       EvmSpecHelper.import_yaml_model(File.join(@model_data_dir, "dialog"), @domain)
+      puts "Importing Model ended   #{Time.now}"
     end
 
     it "properly instantiates dialogs" do
@@ -265,6 +267,7 @@ module MiqAeDialogSpec
       # puts "#{dialogs.inspect}"
       # puts ws.to_xml
       dialogs.should == EXPECTED_DIALOGS
+      puts "Test ended             #{Time.now}"
 
     end
 

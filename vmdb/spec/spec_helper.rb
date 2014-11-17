@@ -37,6 +37,16 @@ RSpec.configure do |config|
   config.use_transactional_fixtures = true
   config.use_instantiated_fixtures  = false
 
+  ENV['AUTOMATE_DB_DIRECTORY'] = '/tmp/rspec_test'
+  config.before(:each) do
+    FileUtils.rm_rf('/tmp/rspec_test') if File.exist?('/tmp/rspec_test')
+    FileUtils.mkdir('/tmp/rspec_test')
+  end
+  
+  config.after(:each) do
+    FileUtils.rm_rf('/tmp/rspec_test') if File.exist?('/tmp/rspec_test')
+  end
+
   # config.before(:all) do
   #   EvmSpecHelper.log_ruby_object_usage
   # end

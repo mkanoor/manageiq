@@ -1,7 +1,7 @@
 class TreeNodeBuilder
   include UiConstants
   include MiqAeClassHelper
-
+  AE_CLASSES_LIST = %w(MiqAeNamespace MiqAeClass MiqAeInstance MiqAeMethod MiqAeField MiqAeValue)
   # method to build non-explorer tree nodes
   def self.generic_tree_node(key, text, image, tip = nil, options = {})
     text = ERB::Util.html_escape(text) unless text.html_safe?
@@ -249,7 +249,11 @@ class TreeNodeBuilder
       base_class = object.class.base_model.name           # i.e. Vm or MiqTemplate
       base_class = "Datacenter" if base_class == "EmsFolder" && object.is_datacenter
       prefix = X_TREE_NODE_PREFIXES_INVERTED[base_class]
-      cid = ActiveRecord::Base.compress_id(object.id)
+      if AE_CLASSES_LIST.include?(base_class)
+        cid = object.id
+      else
+        cid = ActiveRecord::Base.compress_id(object.id)
+      end
       "#{format_parent_id}#{prefix}-#{cid}"
     end
   end

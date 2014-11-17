@@ -3,7 +3,11 @@ module MiqAeDatastore
   XML_VERSION_MIN_SUPPORTED = "1.0"
   MANAGEIQ_DOMAIN = "ManageIQ"
   MANAGEIQ_PRIORITY = 0
-  DATASTORE_DIRECTORY = Rails.root.join('db/fixtures/ae_datastore')
+  if ENV.key?('AUTOMATE_DB_DIRECTORY')
+    DATASTORE_DIRECTORY = ENV['AUTOMATE_DB_DIRECTORY']
+  else
+    DATASTORE_DIRECTORY = Rails.root.join('db/fixtures/automate')
+  end
   DEFAULT_OBJECT_NAMESPACE = "$"
   TEMP_DOMAIN_PREFIX = "TEMP_DOMAIN"
   ALL_DOMAINS = "*"
@@ -126,7 +130,9 @@ module MiqAeDatastore
 
   def self.reset
     $log.info("MIQ(MiqAeDatastore) Clearing datastore") if $log
-    [MiqAeClass, MiqAeField, MiqAeInstance, MiqAeNamespace, MiqAeMethod, MiqAeValue].each { |k| k.delete_all }
+    #[MiqAeClass, MiqAeField, MiqAeInstance, MiqAeNamespace, MiqAeMethod, MiqAeValue].each { |k| k.delete_all }
+    rc = FileUtils.remove_entry_secure(DATASTORE_DIRECTORY)
+    FileUtils.mkdir(DATASTORE_DIRECTORY) if rc == 0
   end
 
   def self.reset_default_namespace
@@ -159,10 +165,11 @@ module MiqAeDatastore
     object_class.ae_methods.create!(default_method_options.merge(:name => 'log_workspace'))
 
     email_method = object_class.ae_methods.create!(default_method_options.merge(:name => 'send_email'))
-    email_method.inputs.create!([{:name => 'to',      :priority => 1, :datatype => 'string'},
-                                 {:name => 'from',    :priority => 2, :datatype => 'string'},
-                                 {:name => 'subject', :priority => 3, :datatype => 'string'},
-                                 {:name => 'body',    :priority => 4, :datatype => 'string'}])
+    email_method.inputs.build([{:name => 'to',      :priority => 1, :datatype => 'string'},
+                               {:name => 'from',    :priority => 2, :datatype => 'string'},
+                               {:name => 'subject', :priority => 3, :datatype => 'string'},
+                               {:name => 'body',    :priority => 4, :datatype => 'string'}])
+    email_method.save
   end
 
   def self.reset_to_defaults
@@ -193,30 +200,18 @@ module MiqAeDatastore
 
   def self.get_homonymic_across_domains(arclass, fqname, enabled = nil)
     return [] if fqname.blank?
+    domains = MiqAeDomain.all.reverse
     options = arclass == ::MiqAeClass ? {:has_instance_name => false} : {}
     _, ns, klass, name = ::MiqAeEngine::MiqAePath.get_domain_ns_klass_inst(fqname, options)
-    name = klass if arclass == ::MiqAeClass
-    MiqAeDatastore.get_sorted_matching_objects(arclass, ns, klass, name, enabled)
+    tail_name = name ? "#{ns}/#{klass}/#{name}" : "#{ns}/#{klass}"
+    collect_objects(arclass, domains, tail_name, enabled)
   end
 
-  def self.get_sorted_matching_objects(arclass, ns, klass, name, enabled)
-    options = arclass == ::MiqAeClass ? {:has_instance_name => false} : {}
-    matches = arclass.where("lower(name) = ?", name.downcase).collect do |obj|
-      get_domain_priority_object(obj, klass, ns, enabled, options)
+  def self.collect_objects(arclass, domains, tail_name, enabled)
+    domains.collect do |dom|
+      next if enabled && dom.enabled != enabled
+      temp_fqname = "#{dom.name}/#{tail_name}"
+      arclass.find_by_fqname(temp_fqname) if arclass.exists?(temp_fqname)
     end.compact
-    matches.sort { |a, b| b[:priority] <=> a[:priority] }.collect { |v| v[:obj] }
-  end
-
-  def self.get_domain_priority_object(obj, klass, ns, enabled, options)
-    domain, nsd, klass_name, _ = ::MiqAeEngine::MiqAePath.get_domain_ns_klass_inst(obj.fqname, options)
-    return if !klass_name.casecmp(klass).zero? || !nsd.casecmp(ns).zero?
-    domain_obj = get_domain_object(domain, enabled)
-    {:obj => obj, :priority => domain_obj.priority} if domain_obj
-  end
-
-  def self.get_domain_object(name, enabled)
-    arel = MiqAeDomain.where("lower(name) = ?", name.downcase)
-    arel = arel.where(:enabled => enabled) unless enabled.nil?
-    arel.first
   end
 end # module MiqAeDatastore

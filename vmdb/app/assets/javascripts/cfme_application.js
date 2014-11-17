@@ -1049,7 +1049,7 @@ function miqObserveCheckboxes() {
     new Form.Element.EventObserver(this.id, function(element, value) {
       var sparkleOn = this.element.getAttribute('data-miq_sparkle_on'); // Grab miq_sparkle settings
       var sparkleOff = this.element.getAttribute('data-miq_sparkle_off');
-      new Ajax.Request(url,
+      new Ajax.Request(encodeURI(url),
                       {
                         asynchronous:true, evalScripts:true,
                         onLoading: function() {if (sparkleOn) miqSparkle(true);},

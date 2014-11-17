@@ -31,7 +31,7 @@ class MiqAeClassCopy
     MiqAeClass.transaction do
       ids.each do |id|
         class_obj = MiqAeClass.find(id)
-        new_class = new(class_obj.fqname).to_domain(domain, ns, overwrite)
+        new_class = new(class_obj.fqname_from_objects).to_domain(domain, ns, overwrite)
         new_ids << new_class.id if new_class
       end
     end

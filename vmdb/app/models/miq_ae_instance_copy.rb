@@ -40,7 +40,7 @@ class MiqAeInstanceCopy
     MiqAeInstance.transaction do
       ids.each do |id|
         instance_obj = MiqAeInstance.find(id)
-        new_instance = new(instance_obj.fqname, validate_flag).to_domain(domain, ns, overwrite)
+        new_instance = new(instance_obj.fqname_from_objects, validate_flag).to_domain(domain, ns, overwrite)
         nids << new_instance.id if new_instance
         validate_flag = false
       end

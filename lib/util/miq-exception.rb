@@ -78,6 +78,17 @@ module MiqException
     end
   end
 
+  class MiqGitConflicts < Error
+    attr_reader :conflicts
+    def initialize(conflicts)
+      @conflicts = conflicts
+      super
+    end
+  end
+
+  class MiqGitEntryMissing < Error; end
+  class MiqGitRepositoryMissing < Error; end
+
   # Openstack connection error when service is not available
   class ServiceNotAvailable < Error; end
 

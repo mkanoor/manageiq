@@ -61,7 +61,7 @@ $j(document).ready(function(){
 				} else if (oneTrans) {
 					miqSendOneTrans(url);
 				} else {
-          urlstring = url + "?" + this.id + "=" + encodeURIComponent(this.value);	//  tack on the id and value to the URL
+          urlstring = encodeURI(url) + "?" + this.id + "=" + encodeURIComponent(this.value);	//  tack on the id and value to the URL
           new Ajax.Request(urlstring,
                           {
                             asynchronous:true, evalScripts:true

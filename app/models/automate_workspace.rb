@@ -1,3 +1,9 @@
+#
+# @model AutomateWorkspace
+# 
+# @property guid(required) [string] The unique indentifier for the Automate Workspace
+# @property input(required) [InputWorkspace] The Input Object
+# @property href [string] The URI for the Automate Workspace object
 class AutomateWorkspace < ApplicationRecord
   include UuidMixin
   belongs_to :user

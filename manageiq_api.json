@@ -1,0 +1,276 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "ManageIQ API",
+    "description": "Manage your virtual and cloud infrastructure with this opensource API from http://www.manageiq.org",
+    "version": "3.0"
+  },
+  "host": "localhost:3000",
+  "basePath": "/api",
+  "paths": {
+    "/automate_workspaces": {
+      "get": {
+        "tags": [
+          "AutomateWorkspace"
+        ],
+        "operationId": "AutomateWorkspace-index",
+        "parameters": [
+
+        ],
+        "responses": {
+          "default": {
+            "description": "",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/AutomateWorkspace"
+              }
+            }
+          }
+        },
+        "description": "return a list of AutomateWorkspace",
+        "summary": "Index of AutomateWorkspaces",
+        "security": [
+          {
+            "basic_http_auth": [
+
+            ]
+          }
+        ],
+        "x-controller": "api/automate_workspaces",
+        "x-action": "index"
+      }
+    },
+    "/automate_workspaces/{guid}": {
+      "get": {
+        "tags": [
+          "AutomateWorkspace"
+        ],
+        "operationId": "AutomateWorkspace-show",
+        "parameters": [
+          {
+            "name": "guid",
+            "description": "The guid of automate workspace",
+            "required": true,
+            "in": "path",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/AutomateWorkspace"
+            }
+          }
+        },
+        "description": "return a AutomateWorkspace",
+        "summary": "Fetch a AutomateWorkspace based on a guid",
+        "security": [
+          {
+            "basic_http_auth": [
+
+            ]
+          }
+        ],
+        "x-controller": "api/automate_workspaces",
+        "x-action": "show"
+      },
+      "post": {
+        "tags": [
+          "AutomateWorkspace"
+        ],
+        "operationId": "AutomateWorkspace-edit_resource",
+        "parameters": [
+          {
+            "name": "data",
+            "description": "The updated workspace",
+            "required": true,
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/UpdateWorkspaceItem"
+            }
+          },
+          {
+            "name": "guid",
+            "description": "The guid of automate workspace",
+            "required": true,
+            "in": "path",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/AutomateWorkspace"
+            }
+          }
+        },
+        "description": "update a AutomateWorkspace",
+        "summary": "Update an Automate Workspace based on a guid",
+        "security": [
+          {
+            "basic_http_auth": [
+
+            ]
+          }
+        ],
+        "x-controller": "api/automate_workspaces",
+        "x-action": "edit_resource"
+      }
+    },
+    "/providers/{id}/vms": {
+      "get": {
+        "tags": [
+          "Providers subcollection"
+        ],
+        "operationId": "Providers subcollection-no_op_vms",
+        "parameters": [
+          {
+            "name": "id",
+            "description": "The id of provider",
+            "required": true,
+            "in": "path",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "description": "return a list of VM's",
+        "summary": "Return an array of vms",
+        "security": [
+          {
+            "basic_http_auth": [
+
+            ]
+          }
+        ],
+        "x-controller": "api/providers",
+        "x-action": "no_op_vms"
+      }
+    }
+  },
+  "definitions": {
+    "AutomateWorkspace": {
+      "type": "object",
+      "properties": {
+        "guid": {
+          "type": "string",
+          "description": "The unique indentifier for the Automate Workspace"
+        },
+        "input": {
+          "$ref": "#/definitions/InputWorkspace",
+          "description": "The Input Object"
+        },
+        "href": {
+          "type": "string",
+          "description": "The URI for the Automate Workspace object"
+        }
+      },
+      "required": [
+        "guid",
+        "input"
+      ]
+    },
+    "InputWorkspace": {
+      "type": "object",
+      "properties": {
+        "current": {
+          "type": "object",
+          "description": ""
+        },
+        "workspace": {
+          "type": "object",
+          "description": ""
+        },
+        "method_parameters": {
+          "type": "object",
+          "description": ""
+        },
+        "state_vars": {
+          "type": "object",
+          "description": ""
+        }
+      },
+      "required": [
+        "current",
+        "workspace",
+        "method_parameters",
+        "state_vars"
+      ]
+    },
+    "ObjectsCollection": {
+      "type": "object",
+      "properties": {
+        "objects": {
+          "type": "object",
+          "description": "A collection of AutomateObjects keyed with the fully qualified object path"
+        }
+      },
+      "required": [
+        "objects"
+      ]
+    },
+    "OutputWorkspace": {
+      "type": "object",
+      "properties": {
+        "objects": {
+          "type": "object",
+          "description": ""
+        },
+        "state_vars": {
+          "type": "object",
+          "description": ""
+        }
+      },
+      "required": [
+        "objects",
+        "state_vars"
+      ]
+    },
+    "UpdateWorkspaceItem": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "description": ""
+        },
+        "resource": {
+          "$ref": "#/definitions/OutputWorkspace",
+          "description": ""
+        }
+      },
+      "required": [
+        "action",
+        "resource"
+      ]
+    }
+  },
+  "tags": [
+    {
+      "name": "AutomateWorkspace",
+      "description": "This document describes the API for interacting with Automate Workspaces"
+    },
+    {
+      "name": "Providers subcollection",
+      "description": "This document describes the API for interacting with ManageIQ Providers"
+    }
+  ],
+  "securityDefinitions": {
+    "basic_http_auth": {
+      "type": "basic",
+      "description": "Basic userid/password authentication",
+      "flow": "implicit"
+    }
+  }
+}

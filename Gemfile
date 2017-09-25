@@ -57,6 +57,7 @@ gem "rubyzip",                        "~>1.2.1",       :require => false
 gem "rugged",                         "~>0.25.0",      :require => false
 gem "simple-rss",                     "~>1.3.1",       :require => false
 gem "snmp",                           "~>1.2.0",       :require => false
+gem "swagger_yard"
 
 # Modified gems (forked on Github)
 gem "amazon_ssa_support",                          :require => false, :git => "https://github.com/ManageIQ/amazon_ssa_support.git", :branch => "master" # Temporary dependency to be moved to manageiq-providers-amazon when officially release
